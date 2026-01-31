@@ -1,50 +1,51 @@
-# Welcome to your Expo app 👋
+# Expo Router Auth Flow
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Reference for handling initial navigation for logged-in/logged-out users with session persistence.
 
-## Get started
+## Stack
 
-1. Install dependencies
+- **Expo Router** - Navigation with `Stack.Protected` guards
+- **Zustand** - Global authentication state
+- **MMKV** - Fast and synchronous persistence
 
-   ```bash
-   npm install
-   ```
+## Approach
 
-2. Start the app
+This project uses **guards** instead of `<Redirect />` to control route access:
 
-   ```bash
-   npx expo start
-   ```
+```tsx
+// app/_layout.tsx
+<Stack screenOptions={{ headerShown: false }}>
+  <Stack.Protected guard={!session}>
+    <Stack.Screen name="(auth)" />
+  </Stack.Protected>
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+  <Stack.Protected guard={!!session}>
+    <Stack.Screen name="(tabs)" />
+  </Stack.Protected>
+</Stack>
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+When `session` changes, Expo Router automatically shows/hides the corresponding routes.
 
-## Learn more
+## Structure
 
-To learn more about developing your project with Expo, look at the following resources:
+```
+app/
+  _layout.tsx          # Root layout with guards
+  (auth)/
+    _layout.tsx
+    sign-in.tsx          # Sign in screen
+    sign-up.tsx          # Sign up screen
+  (tabs)/
+    _layout.tsx
+    index.tsx          # Home (protected)
+src/
+  stores/
+    auth-store.ts      # Zustand + MMKV
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Why MMKV
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Synchronous reads (no async/await needed to initialize)
+- ~30x faster than AsyncStorage
+- Session is read instantly when the app opens
